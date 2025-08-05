@@ -37,7 +37,17 @@ const Header: React.FC = () => {
           {/* Logo and Brand */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <h1 className="text-2xl font-bold text-blue-600">RDK CRM</h1>
+              <a href="/" className="flex items-center hover:opacity-80 transition-opacity duration-200">
+                <img 
+                  src="/logo.png" 
+                  alt="RDK CRM Logo" 
+                  className="h-14 w-auto"
+                  onError={(e) => {
+                    console.error('Logo failed to load');
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              </a>
             </div>
           </div>
 
