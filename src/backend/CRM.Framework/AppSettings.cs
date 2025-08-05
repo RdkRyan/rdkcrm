@@ -12,6 +12,7 @@ namespace CRM.Framework
             var configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appSettings.json", false)
+                .AddEnvironmentVariables()
                 .Build();
 
             SecurityKey = configuration["Auth:SecurityKey"];
