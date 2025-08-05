@@ -1,0 +1,65 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Threading.Tasks;
+using CRM.Domain.Contracts.Configuration;
+using CRM.Domain.Contracts.Gateways;
+using CRM.Domain.Contracts.Integrations;
+using CRM.Domain.Models;
+using CRM.Domain.Models.Integrations;
+using CRM.Shared;
+using Microsoft.Extensions.Logging;
+using Newtonsoft.Json.Linq;
+
+namespace CRM.Infrastructure.Gateways.Integrations
+{
+    public class ExcedeVehicleTypeGateway : IReadOnlyGateway<ExcedeVehicleType>
+    {
+        private readonly IAppSettings _configuration;
+        private readonly ILogger<ExcedeVehicleTypeGateway> _logger;
+        private readonly IHttpClientFactory _httpClientFactory;
+        
+        public ExcedeVehicleTypeGateway(IAppSettings configuration, ILogger<ExcedeVehicleTypeGateway> logger, IHttpClientFactory httpClientFactory)
+        {
+            _configuration = configuration;
+            _logger = logger;
+            _httpClientFactory = httpClientFactory;
+        }
+
+        public async Task<ICollection<ExcedeVehicleType>> GetAllAsync(string accessToken)
+        {
+            var client = _httpClientFactory.CreateClient("excedeapi");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        
+            var myObject = (dynamic) new JObject();
+            myObject.OrderBy = "";
+            myObject.Limit = 999999;
+            myObject.Skip = 0;
+            var postBody = new StringContent(myObject.ToString(), System.Text.Encoding.UTF8, "application/json");
+        
+            var excedeResponse = await client.PostAsync("search/vehicle_type", postBody);
+            var excedeListJson = await excedeResponse.Content.ReadAsStringAsync();
+            var excedeList = Newtonsoft.Json.JsonConvert.DeserializeObject<ResultSet<ExcedeVehicleType>>(excedeListJson).Items;
+        
+            return excedeList;
+        }
+        
+        public async Task<ExcedeVehicleType> GetAsyncById(string accessToken, string id)
+        {
+            var client = _httpClientFactory.CreateClient("excedeapi");
+
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            var myObject = (dynamic)new JObject();
+            myObject.Where = $"Id==\"{id}\"";
+
+            var postBody = new StringContent(myObject.ToString(), System.Text.Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("search/vehicle_type", postBody);
+            var responseString = await response.Content.ReadAsStringAsync();
+            var resultSet = Newtonsoft.Json.JsonConvert.DeserializeObject<ResultSet<ExcedeVehicleType>>(responseString);
+
+            return resultSet.Items.Single();
+        }
+    }
+}

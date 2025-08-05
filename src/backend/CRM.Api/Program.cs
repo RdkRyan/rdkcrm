@@ -1,8 +1,10 @@
+using CRM.Domain.Contracts.Configuration;
+using CRM.Framework;
+using CRM.Infrastructure;
+using CRM.Shared;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models; // New import for Swagger configuration
-using System.Security.Claims;
+using Microsoft.OpenApi.Models;
+using Polly;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,8 +44,22 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.AddSingleton<IAppSettings, AppSettings>();
+
+builder.Services.AddTransient(typeof(IPaginatedResult<>), typeof(PaginatedResult<>));
+builder.Services.AddTransient(typeof(IPaginatedList<>), typeof(PaginatedList<>));
+
+builder.Services.AddFrameworkServices();
+builder.Services.AddInfrastructureServices();
+
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
+
+builder.Services.AddHttpClient("excedeapi", c =>
+{
+    c.BaseAddress = new Uri(builder.Configuration["ProcedeApi"]);
+}).AddTransientHttpErrorPolicy(p => p.RetryAsync(5));
+
 builder.Services.AddEndpointsApiExplorer();
 
 // --- NEW: Configure Swagger to accept JWT Bearer tokens ---
@@ -111,20 +127,20 @@ app.UseCors();
 
 app.UseAuthentication();
 
-// --- NEW: Middleware to log all authenticated user claims ---
-app.Use(async (context, next) =>
-{
-    // This middleware runs after UseAuthentication, so the user should be set if the token is valid.
-    if (context.User.Identity?.IsAuthenticated == true)
-    {
-        app.Logger.LogInformation("User is authenticated. Claims:");
-        foreach (var claim in context.User.Claims)
-        {
-            app.Logger.LogInformation("  - {ClaimType}: {ClaimValue}", claim.Type, claim.Value);
-        }
-    }
-    await next.Invoke();
-});
+//// --- NEW: Middleware to log all authenticated user claims ---
+//app.Use(async (context, next) =>
+//{
+//    // This middleware runs after UseAuthentication, so the user should be set if the token is valid.
+//    if (context.User.Identity?.IsAuthenticated == true)
+//    {
+//        app.Logger.LogInformation("User is authenticated. Claims:");
+//        foreach (var claim in context.User.Claims)
+//        {
+//            app.Logger.LogInformation("  - {ClaimType}: {ClaimValue}", claim.Type, claim.Value);
+//        }
+//    }
+//    await next.Invoke();
+//});
 
 app.UseAuthorization();
 

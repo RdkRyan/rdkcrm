@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
-namespace crm.Controllers
+namespace CRM.Api.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
