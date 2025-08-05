@@ -15,6 +15,16 @@ export interface ReportData {
   // Add other report data properties as needed
 }
 
+export interface EmployeeCallLog {
+  id: string;
+  direction: string;
+  employeeName: string;
+  callLength: string;
+  toNumber: string;
+  fromNumber: string;
+  customerName: string;
+}
+
 class ApiService {
   private getAccessTokenSilently: () => Promise<string>;
 
@@ -84,6 +94,32 @@ class ApiService {
       return data;
     } catch (error) {
       console.error('Error fetching report data:', error);
+      throw error;
+    }
+  }
+
+  async getEmployeeCallLogs(): Promise<EmployeeCallLog[]> {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/Report/calllogs`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Unauthorized: Invalid or expired token');
+        } else if (response.status === 403) {
+          throw new Error('Forbidden: Insufficient permissions to access employee call logs');
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching employee call logs:', error);
       throw error;
     }
   }
