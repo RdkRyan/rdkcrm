@@ -30,6 +30,12 @@ builder.Services.AddAuthorization(options =>
 
     options.AddPolicy("ReadReportsPolicy", policy =>
         policy.RequireClaim("permissions", "read:reports"));
+
+    // A user must have ALL of these permissions to satisfy this policy
+    options.AddPolicy("AdminPolicy", policy =>
+        policy.RequireClaim("permissions", "system:admin")
+              .RequireClaim("permissions", "read:contacts")
+              .RequireClaim("permissions", "read:reports"));
 });
 
 // Configure CORS to allow the React app to make requests
@@ -45,16 +51,12 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddSingleton<IAppSettings, AppSettings>();
-
 builder.Services.AddTransient(typeof(IPaginatedResult<>), typeof(PaginatedResult<>));
 builder.Services.AddTransient(typeof(IPaginatedList<>), typeof(PaginatedList<>));
-
 builder.Services.AddFrameworkServices();
 builder.Services.AddInfrastructureServices();
-
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
-
 builder.Services.AddHttpClient("excedeapi", c =>
 {
     c.BaseAddress = new Uri(builder.Configuration["ProcedeApi"]);
@@ -62,7 +64,6 @@ builder.Services.AddHttpClient("excedeapi", c =>
 
 builder.Services.AddEndpointsApiExplorer();
 
-// --- NEW: Configure Swagger to accept JWT Bearer tokens ---
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "RDK CRM API", Version = "v1" });
@@ -127,7 +128,7 @@ app.UseCors();
 
 app.UseAuthentication();
 
-//// --- NEW: Middleware to log all authenticated user claims ---
+//// Middleware to log all authenticated user claims ---
 //app.Use(async (context, next) =>
 //{
 //    // This middleware runs after UseAuthentication, so the user should be set if the token is valid.

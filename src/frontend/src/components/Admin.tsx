@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { createApiService, Contact, ReportData, EmployeeCallLog } from '../services/apiService';
+import { hasAdminRole } from '../utils/roleUtils';
 
 const Admin: React.FC = () => {
-  const { isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
+  const { isAuthenticated, isLoading, getAccessTokenSilently, user } = useAuth0();
   const [tokenMessage, setTokenMessage] = useState("Click to get a token.");
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [reportData, setReportData] = useState<ReportData[]>([]);
@@ -131,6 +132,23 @@ const Admin: React.FC = () => {
     );
   }
 
+  if (!hasAdminRole(user)) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-100">
+        <div className="bg-white p-8 rounded-2xl shadow-xl text-center">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h1>
+          <p className="text-gray-600 mb-6">You do not have admin privileges to access this panel.</p>
+          <a
+            href="/"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
+          >
+            Go to Home
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -139,6 +157,16 @@ const Admin: React.FC = () => {
           <p className="text-lg text-gray-600 mb-8 text-center">
             Test your API endpoints with authentication and permission validation
           </p>
+          
+          {/* Debug Link */}
+          <div className="text-center mb-8">
+            <a
+              href="/debug-roles"
+              className="bg-yellow-500 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-yellow-600 transition-colors duration-200 inline-block"
+            >
+              🔍 Debug Roles & Token
+            </a>
+          </div>
 
           {/* Token Management */}
           <div className="mb-8">

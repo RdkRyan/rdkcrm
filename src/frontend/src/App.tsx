@@ -6,20 +6,20 @@ import Home from './components/Home';
 import Contacts from './components/Contacts';
 import CallLogs from './components/CallLogs';
 import Admin from './components/Admin';
+import RoleTest from './components/RoleTest';
+import Auth0Diagnostic from './components/Auth0Diagnostic';
+import SimpleAuth from './components/SimpleAuth';
+import UserDebug from './components/UserDebug';
+import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 
-// -----------------------------------------------------------
-// Step 1: Ensure these environment variables are correct.
-//
-// The 'clientId' should be from your Auth0 'Default App' client.
-// The 'audience' should be from your 'rdk-crm' API.
-// -----------------------------------------------------------
+// Environment variables
 const domain = process.env.REACT_APP_AUTH0_DOMAIN;
 const clientId = process.env.REACT_APP_AUTH0_CLIENT_ID;
 const audience = process.env.REACT_APP_AUTH0_AUDIENCE;
 
 const App = () => {
-  if (!domain || !clientId || !audience) {
+  if (!domain || !clientId) {
     return (
       <div className="flex items-center justify-center h-screen bg-gray-100">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-md">
@@ -31,27 +31,34 @@ const App = () => {
   }
 
   return (
-    <Auth0Provider
-      domain={domain}
-      clientId={clientId}
-      authorizationParams={{
-        redirect_uri: window.location.origin,
-        audience: audience,
-        // The following scope is essential for the authorization code flow.
-        scope: "openid profile email" 
-      }}
-    >
-      <Router>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/contacts" element={<Contacts />} />
-            <Route path="/calllogs" element={<CallLogs />} />
-            <Route path="/admin" element={<Admin />} />
-          </Routes>
-        </Layout>
-      </Router>
-    </Auth0Provider>
+    <ErrorBoundary>
+      <Auth0Provider
+        domain={domain}
+        clientId={clientId}
+        authorizationParams={{
+          redirect_uri: window.location.origin,
+          scope: "openid profile email"
+        }}
+        onRedirectCallback={(appState) => {
+          console.log('Auth0 redirect callback:', appState);
+        }}
+      >
+        <Router>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/contacts" element={<Contacts />} />
+              <Route path="/calllogs" element={<CallLogs />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/role-test" element={<RoleTest />} />
+              <Route path="/auth0-diagnostic" element={<Auth0Diagnostic />} />
+              <Route path="/simple-auth" element={<SimpleAuth />} />
+              <Route path="/user-debug" element={<UserDebug />} />
+            </Routes>
+          </Layout>
+        </Router>
+      </Auth0Provider>
+    </ErrorBoundary>
   );
 };
 

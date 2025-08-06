@@ -1,10 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { hasAdminRole } from '../utils/roleUtils';
 
 const Header: React.FC = () => {
-  const { isAuthenticated, loginWithRedirect, logout, user } = useAuth0();
+  const { isAuthenticated, loginWithRedirect, logout, user, isLoading } = useAuth0();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [avatarError, setAvatarError] = useState(false);
+  const [userFullyLoaded, setUserFullyLoaded] = useState(false);
+
+  // Debug logging
+  console.log('Header - Auth state:', { isAuthenticated, isLoading, user: user?.email });
+  console.log('Header - User object:', user);
+  console.log('Header - Admin role check:', hasAdminRole(user));
+     console.log('Header - Roles from user:', user?.['dev-uneclc7juqwrway0.us.auth0.com/roles']);
+  console.log('Header - All user properties:', Object.keys(user || {}));
+  console.log('Header - User app_metadata:', user?.app_metadata);
+  console.log('Header - User roles property:', user?.roles);
+  
+     // More specific debugging
+   const rolesKey = 'dev-uneclc7juqwrway0.us.auth0.com/roles';
+  console.log('Header - Direct roles access:', user?.[rolesKey]);
+  console.log('Header - Type of roles:', typeof user?.[rolesKey]);
+  console.log('Header - Is roles array?', Array.isArray(user?.[rolesKey]));
+  console.log('Header - Roles length:', user?.[rolesKey]?.length);
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -18,6 +36,18 @@ const Header: React.FC = () => {
   useEffect(() => {
     setAvatarError(false);
   }, [user?.picture]);
+
+  // Debug user object changes
+  useEffect(() => {
+    console.log('Header - User object changed:', user);
+         console.log('Header - User roles on change:', user?.['dev-uneclc7juqwrway0.us.auth0.com/roles']);
+    
+         // Check if user is fully loaded (has roles)
+     if (user && user['dev-uneclc7juqwrway0.us.auth0.com/roles']) {
+      setUserFullyLoaded(true);
+      console.log('Header - User fully loaded with roles');
+    }
+  }, [user]);
 
   const handleAvatarError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     console.error('Avatar image failed to load (likely rate limited):', user?.picture);
@@ -73,12 +103,20 @@ const Header: React.FC = () => {
                 >
                   Call Logs
                 </a>
-                <a
-                  href="/admin"
-                  className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                >
-                  Admin
-                </a>
+                                                  {user?.['dev-uneclc7juqwrway0.us.auth0.com/roles']?.includes('Admin') && (
+                   <a
+                     href="/admin"
+                     className="text-gray-700 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                   >
+                     Admin
+                   </a>
+                 )}
+                                   {/* Temporary debug indicator */}
+                  <span className="text-xs text-red-500">
+                    Direct Check: {user?.['dev-uneclc7juqwrway0.us.auth0.com/roles']?.includes('Admin') ? 'ADMIN' : 'NO ADMIN'}
+                    | Roles: {JSON.stringify(user?.['dev-uneclc7juqwrway0.us.auth0.com/roles'])}
+                    | User exists: {user ? 'YES' : 'NO'}
+                  </span>
               </>
             )}
           </nav>
@@ -166,12 +204,21 @@ const Header: React.FC = () => {
                   >
                     Call Logs
                   </a>
+                                     {user?.['dev-uneclc7juqwrway0.us.auth0.com/roles']?.includes('Admin') && (
+                     <a
+                       href="/admin"
+                       className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"
+                       onClick={() => setIsMenuOpen(false)}
+                     >
+                       Admin
+                     </a>
+                   )}
                   <a
-                    href="/admin"
-                    className="text-gray-700 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"
+                    href="/user-debug"
+                    className="text-yellow-600 hover:text-yellow-700 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Admin
+                    Debug User
                   </a>
                 </>
               )}

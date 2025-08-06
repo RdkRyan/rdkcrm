@@ -1,8 +1,12 @@
 import React from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { hasAdminRole, hasReadContactsRole } from '../utils/roleUtils';
 
 const Home: React.FC = () => {
-  const { isAuthenticated, loginWithRedirect } = useAuth0();
+  const { isAuthenticated, loginWithRedirect, user, isLoading, error } = useAuth0();
+
+  // Debug logging
+  console.log('Home component - Auth state:', { isAuthenticated, isLoading, error, user });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -26,12 +30,26 @@ const Home: React.FC = () => {
                 >
                   Get Started
                 </button>
-              ) : (
+              ) : hasAdminRole(user) ? (
                 <a
                   href="/admin"
                   className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-lg inline-block"
                 >
                   Go to Admin
+                </a>
+              ) : hasReadContactsRole(user) ? (
+                <a
+                  href="/contacts"
+                  className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-lg inline-block"
+                >
+                  View Contacts
+                </a>
+              ) : (
+                <a
+                  href="/contacts"
+                  className="bg-blue-600 text-white px-8 py-3 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors duration-200 shadow-lg inline-block"
+                >
+                  Access Dashboard
                 </a>
               )}
               <a
@@ -161,9 +179,23 @@ const Home: React.FC = () => {
             >
               Start Your Free Trial
             </button>
-          ) : (
+          ) : hasAdminRole(user) ? (
             <a
               href="/admin"
+              className="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors duration-200 shadow-lg inline-block"
+            >
+              Access Admin Panel
+            </a>
+          ) : hasReadContactsRole(user) ? (
+            <a
+              href="/contacts"
+              className="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors duration-200 shadow-lg inline-block"
+            >
+              View Contacts
+            </a>
+          ) : (
+            <a
+              href="/contacts"
               className="bg-white text-blue-600 px-8 py-3 rounded-lg text-lg font-semibold hover:bg-gray-100 transition-colors duration-200 shadow-lg inline-block"
             >
               Access Dashboard
