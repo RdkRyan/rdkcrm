@@ -57,16 +57,16 @@ const TimelineGraph: React.FC<TimelineGraphProps> = ({ callLogs }) => {
 
   return (
     <div className="space-y-6">
-      <div className="text-sm text-gray-500 mb-4">
+      <div className="text-sm text-gray-500 dark:text-gray-400 mb-4">
         {callLogs.length} call{callLogs.length !== 1 ? 's' : ''} for{' '}
-        <span className="font-semibold text-blue-600 text-base">{callLogs[0]?.employeeName || 'employees'}</span> throughout the work day
+        <span className="font-semibold text-blue-600 dark:text-blue-400 text-base">{callLogs[0]?.employeeName || 'employees'}</span> throughout the work day
       </div>
       
       {/* Timeline Header */}
-      <div className="bg-gray-50 rounded-lg p-4">
+      <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Work Day Timeline</h3>
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Work Day Timeline</h3>
+          <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
             <div className="flex items-center space-x-1">
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
               <span>Incoming</span>
@@ -81,7 +81,7 @@ const TimelineGraph: React.FC<TimelineGraphProps> = ({ callLogs }) => {
         {/* Timeline Grid */}
         <div className="relative">
           {/* Time labels */}
-          <div className="flex justify-between text-xs text-gray-500 mb-2">
+          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
             {timeSlots.map((hour) => (
               <span key={hour} className="w-16 text-center">
                 {formatTime(hour)}
@@ -90,11 +90,11 @@ const TimelineGraph: React.FC<TimelineGraphProps> = ({ callLogs }) => {
           </div>
 
           {/* Timeline track */}
-          <div className="relative h-48 bg-white border-2 border-gray-200 rounded-lg overflow-hidden">
+          <div className="relative h-48 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-600 rounded-lg overflow-hidden">
             {/* Hour markers */}
             <div className="absolute inset-0 flex">
               {timeSlots.slice(0, -1).map((hour) => (
-                <div key={hour} className="flex-1 border-r border-gray-100"></div>
+                <div key={hour} className="flex-1 border-r border-gray-100 dark:border-gray-700"></div>
               ))}
             </div>
 
@@ -171,21 +171,21 @@ const TimelineGraph: React.FC<TimelineGraphProps> = ({ callLogs }) => {
 
       {/* Call Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-blue-600">{callLogs.length}</div>
-          <div className="text-sm text-blue-800">Total Calls</div>
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{callLogs.length}</div>
+          <div className="text-sm text-blue-800 dark:text-blue-200">Total Calls</div>
         </div>
-        <div className="bg-green-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-green-600">
+        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
             {callLogs.filter(call => call.direction.toLowerCase() === 'incoming').length}
           </div>
-          <div className="text-sm text-green-800">Incoming</div>
+          <div className="text-sm text-green-800 dark:text-green-200">Incoming</div>
         </div>
-        <div className="bg-purple-50 rounded-lg p-4">
-          <div className="text-2xl font-bold text-purple-600">
+        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
             {callLogs.filter(call => call.direction.toLowerCase() === 'outgoing').length}
           </div>
-          <div className="text-sm text-purple-800">Outgoing</div>
+          <div className="text-sm text-purple-800 dark:text-purple-200">Outgoing</div>
         </div>
       </div>
     </div>

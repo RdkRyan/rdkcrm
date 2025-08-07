@@ -32,7 +32,7 @@ const Admin: React.FC = () => {
         }
       });
       setTokenMessage(`Successfully retrieved access token! Token: ${accessToken}`);
-      console.log('Access Token:', accessToken);
+
     } catch (error: unknown) {
       let errorMessage = "An unknown error occurred.";
       if (error instanceof Error) {
@@ -109,18 +109,18 @@ const Admin: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <p className="text-gray-600 text-xl font-semibold">Loading...</p>
+      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
+        <p className="text-gray-600 dark:text-gray-300 text-xl font-semibold">Loading...</p>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <div className="bg-white p-8 rounded-2xl shadow-xl text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">You must be logged in to access the admin panel.</p>
+      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl text-center">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Access Denied</h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">You must be logged in to access the admin panel.</p>
           <a
             href="/"
             className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
@@ -134,10 +134,10 @@ const Admin: React.FC = () => {
 
   if (!hasAdminRole(user)) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-100">
-        <div className="bg-white p-8 rounded-2xl shadow-xl text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">You do not have admin privileges to access this panel.</p>
+      <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
+        <div className="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-xl text-center">
+          <h1 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Access Denied</h1>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">You do not have admin privileges to access this panel.</p>
           <a
             href="/"
             className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200"
@@ -150,23 +150,15 @@ const Admin: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-6 text-center">API Tester</h1>
-          <p className="text-lg text-gray-600 mb-8 text-center">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+          <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-6 text-center">API Tester</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 text-center">
             Test your API endpoints with authentication and permission validation
           </p>
           
-          {/* Debug Link */}
-          <div className="text-center mb-8">
-            <a
-              href="/debug-roles"
-              className="bg-yellow-500 text-white px-6 py-3 rounded-xl shadow-lg hover:bg-yellow-600 transition-colors duration-200 inline-block"
-            >
-              🔍 Debug Roles & Token
-            </a>
-          </div>
+
 
           {/* Token Management */}
           <div className="mb-8">
@@ -217,18 +209,18 @@ const Admin: React.FC = () => {
 
           {/* Status Messages */}
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-gray-700 mb-4">Status</h2>
-            <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl text-left">
-              <pre className="text-gray-800 overflow-x-auto whitespace-pre-wrap">{tokenMessage}</pre>
+            <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-4">Status</h2>
+            <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-4 rounded-xl text-left">
+              <pre className="text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap">{tokenMessage}</pre>
             </div>
           </div>
 
           {/* Error Display */}
           {apiError && (
             <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-red-700 mb-4">Error</h2>
-              <div className="bg-red-50 border border-red-200 p-4 rounded-xl text-left">
-                <pre className="text-red-800 overflow-x-auto whitespace-pre-wrap">{apiError}</pre>
+              <h2 className="text-2xl font-semibold text-red-700 dark:text-red-400 mb-4">Error</h2>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-xl text-left">
+                <pre className="text-red-800 dark:text-red-200 overflow-x-auto whitespace-pre-wrap">{apiError}</pre>
               </div>
             </div>
           )}
@@ -236,13 +228,13 @@ const Admin: React.FC = () => {
           {/* Results Display */}
           {(contacts.length > 0 || reportData.length > 0 || employeeCallLogs.length > 0) && (
             <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-700 mb-4">Results</h2>
+              <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-4">Results</h2>
               
               {contacts.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">Contacts ({contacts.length})</h3>
-                  <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl text-left max-h-60 overflow-y-auto">
-                    <pre className="text-gray-800 overflow-x-auto whitespace-pre-wrap">
+                  <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">Contacts ({contacts.length})</h3>
+                  <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-4 rounded-xl text-left max-h-60 overflow-y-auto">
+                    <pre className="text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap">
                       {JSON.stringify(contacts, null, 2)}
                     </pre>
                   </div>
@@ -251,9 +243,9 @@ const Admin: React.FC = () => {
 
               {reportData.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">Report Data ({reportData.length})</h3>
-                  <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl text-left max-h-60 overflow-y-auto">
-                    <pre className="text-gray-800 overflow-x-auto whitespace-pre-wrap">
+                  <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">Report Data ({reportData.length})</h3>
+                  <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-4 rounded-xl text-left max-h-60 overflow-y-auto">
+                    <pre className="text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap">
                       {JSON.stringify(reportData, null, 2)}
                     </pre>
                   </div>
@@ -262,9 +254,9 @@ const Admin: React.FC = () => {
 
               {employeeCallLogs.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">Employee Call Logs ({employeeCallLogs.length})</h3>
-                  <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl text-left max-h-60 overflow-y-auto">
-                    <pre className="text-gray-800 overflow-x-auto whitespace-pre-wrap">
+                  <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">Employee Call Logs ({employeeCallLogs.length})</h3>
+                  <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-4 rounded-xl text-left max-h-60 overflow-y-auto">
+                    <pre className="text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap">
                       {JSON.stringify(employeeCallLogs, null, 2)}
                     </pre>
                   </div>

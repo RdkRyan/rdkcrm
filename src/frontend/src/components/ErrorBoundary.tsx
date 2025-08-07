@@ -27,13 +27,13 @@ class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center h-screen bg-gray-100">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-md max-w-2xl">
+        <div className="flex items-center justify-center h-screen bg-gray-100 dark:bg-gray-900">
+          <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-6 py-4 rounded-lg shadow-md max-w-2xl">
             <h2 className="text-xl font-bold mb-4">Something went wrong</h2>
             <p className="mb-4">An error occurred while loading the application.</p>
             <details className="mb-4">
               <summary className="cursor-pointer font-semibold">Error Details</summary>
-              <pre className="mt-2 text-sm bg-red-50 p-2 rounded overflow-auto">
+              <pre className="mt-2 text-sm bg-red-50 dark:bg-red-900/40 p-2 rounded overflow-auto">
                 {this.state.error?.toString()}
               </pre>
             </details>

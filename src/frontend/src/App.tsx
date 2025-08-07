@@ -6,11 +6,8 @@ import Home from './components/Home';
 import Contacts from './components/Contacts';
 import CallLogs from './components/CallLogs';
 import Admin from './components/Admin';
-import RoleTest from './components/RoleTest';
-import Auth0Diagnostic from './components/Auth0Diagnostic';
-import SimpleAuth from './components/SimpleAuth';
-import UserDebug from './components/UserDebug';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ThemeProvider } from './contexts/ThemeContext';
 import './App.css';
 
 // Environment variables
@@ -32,32 +29,30 @@ const App = () => {
 
   return (
     <ErrorBoundary>
-      <Auth0Provider
-        domain={domain}
-        clientId={clientId}
-        authorizationParams={{
-          redirect_uri: window.location.origin,
-          scope: "openid profile email"
-        }}
-        onRedirectCallback={(appState) => {
-          console.log('Auth0 redirect callback:', appState);
-        }}
-      >
-        <Router>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/contacts" element={<Contacts />} />
-              <Route path="/calllogs" element={<CallLogs />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/role-test" element={<RoleTest />} />
-              <Route path="/auth0-diagnostic" element={<Auth0Diagnostic />} />
-              <Route path="/simple-auth" element={<SimpleAuth />} />
-              <Route path="/user-debug" element={<UserDebug />} />
-            </Routes>
-          </Layout>
-        </Router>
-      </Auth0Provider>
+      <ThemeProvider>
+        <Auth0Provider
+          domain={domain}
+          clientId={clientId}
+          authorizationParams={{
+            redirect_uri: window.location.origin,
+            scope: "openid profile email"
+          }}
+          onRedirectCallback={(appState) => {
+            // Redirect callback handled
+          }}
+        >
+          <Router>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/contacts" element={<Contacts />} />
+                <Route path="/calllogs" element={<CallLogs />} />
+                <Route path="/admin" element={<Admin />} />
+              </Routes>
+            </Layout>
+          </Router>
+        </Auth0Provider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 };

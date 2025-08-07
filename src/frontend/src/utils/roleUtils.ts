@@ -14,18 +14,13 @@ export const hasAdminRole = (user: User | undefined): boolean => {
                 user.app_metadata?.roles || 
                 user.roles || [];
   
-  console.log('Checking admin role, user roles:', roles);
-  console.log('Full user object for debugging:', user);
-  
   // Check for Admin role (case-insensitive)
   if (roles.includes('Admin') || roles.includes('admin')) {
-    console.log('Admin access granted via role');
     return true;
   }
   
   // Fallback: check for admin email
   if (user.email && user.email.includes('admin')) {
-    console.log('Admin access granted via email pattern');
     return true;
   }
   
@@ -43,8 +38,6 @@ export const hasReadContactsRole = (user: User | undefined): boolean => {
                 user.app_metadata?.roles || 
                 user.roles || [];
   
-  console.log('Checking read:contacts role, user roles:', roles);
-  
   // Check for read:contacts role or admin access
   return roles.includes('read:contacts') || roles.includes('Admin') || roles.includes('admin');
 };
@@ -54,7 +47,6 @@ export const getUserRole = (user: User | undefined): UserRole | null => {
   if (!user) return null;
   
   const roles = user.app_metadata?.roles || user['https://your-namespace/roles'] || [];
-  console.log('Getting user role, user roles:', roles);
   
   if (roles.includes('admin')) {
     return 'admin';
