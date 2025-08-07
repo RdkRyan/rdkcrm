@@ -3,7 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Auth0Provider } from '@auth0/auth0-react';
 import Layout from './components/Layout';
 import Home from './components/Home';
-import Contacts from './components/Contacts';
+import Customers from './components/Customers';
+import CustomerDetails from './components/CustomerDetails';
 import CallLogs from './components/CallLogs';
 import Admin from './components/Admin';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -45,7 +46,8 @@ const App = () => {
             <Layout>
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/contacts" element={<Contacts />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/customers/:customerId" element={<CustomerDetails />} />
                 <Route path="/calllogs" element={<CallLogs />} />
                 <Route path="/admin" element={<Admin />} />
               </Routes>

@@ -7,7 +7,7 @@
         int Limit { get; set; }
         int TotalCount { get; set; }
         int TotalPages { get; set; }
-        //bool HasPreviousPage { get; }
-        //bool HasNextPage { get; }
+        bool HasPreviousPage { get; }
+        bool HasNextPage { get; }
     }
 }

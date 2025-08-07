@@ -11,4 +11,8 @@
     <Folder Include="Contracts\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CRM.Shared\CRM.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

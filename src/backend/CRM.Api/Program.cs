@@ -52,7 +52,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddSingleton<IAppSettings, AppSettings>();
 builder.Services.AddTransient(typeof(IPaginatedResult<>), typeof(PaginatedResult<>));
-builder.Services.AddTransient(typeof(IPaginatedList<>), typeof(PaginatedList<>));
+//builder.Services.AddTransient(typeof(IPaginatedList<>), typeof(PaginatedList<>));
 builder.Services.AddFrameworkServices();
 builder.Services.AddInfrastructureServices();
 builder.Services.AddControllers();

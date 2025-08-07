@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Threading.Tasks;
-using CRM.Domain.Models.Integrations;
+﻿using CRM.Domain.Models.Integrations;
+using CRM.Shared;
 
 namespace CRM.Domain.Contracts.Integrations
 {
@@ -8,6 +7,6 @@ namespace CRM.Domain.Contracts.Integrations
     {
         Task<string> GetExcedeAccessToken();
         Task<ExcedeCustomer> GetExcedeCustomer(string accessToken, string integrationId);
-        Task<List<ExcedeCustomer>> GetExcedeCustomers(string accessToken);
+        Task<PaginatedResult<ExcedeCustomer>> GetExcedeCustomers(string accessToken, int limit, int skip, string orderBy);
     }
 }

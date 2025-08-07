@@ -63,12 +63,12 @@ const Header: React.FC = () => {
             </a>
             {isAuthenticated && (
               <>
-                <a
-                  href="/contacts"
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-                >
-                  Contacts
-                </a>
+                                            <a
+                              href="/customers"
+                              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                            >
+                              Customers
+                            </a>
                 <a
                   href="/calllogs"
                   className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
@@ -198,13 +198,13 @@ const Header: React.FC = () => {
               </a>
               {isAuthenticated && (
                 <>
-                  <a
-                    href="/contacts"
-                    className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Contacts
-                  </a>
+                                                <a
+                                href="/customers"
+                                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"
+                                onClick={() => setIsMenuOpen(false)}
+                              >
+                                Customers
+                              </a>
                   <a
                     href="/calllogs"
                     className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 block px-3 py-2 rounded-md text-base font-medium transition-colors duration-200"

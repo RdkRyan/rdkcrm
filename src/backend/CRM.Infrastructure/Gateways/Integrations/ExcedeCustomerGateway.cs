@@ -1,19 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
-using CRM.Domain.Contracts.Configuration;
+﻿using CRM.Domain.Contracts.Configuration;
 using CRM.Domain.Contracts.Integrations;
-using CRM.Domain.Models;
 using CRM.Domain.Models.Integrations;
 using CRM.Shared;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Net.Http.Headers;
+using System.Text;
 
 namespace CRM.Infrastructure.Gateways.Integrations
 {
@@ -60,28 +53,46 @@ namespace CRM.Infrastructure.Gateways.Integrations
             }
         }
 
-        public async Task<List<ExcedeCustomer>> GetExcedeCustomers(string accessToken)
-        {          
+        public async Task<PaginatedResult<ExcedeCustomer>> GetExcedeCustomers(string accessToken, int limit, int skip, string orderBy)
+        {
+            if (limit > 50)
+                limit = 50;
+
             var client = _httpClientFactory.CreateClient("excedeapi");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-            var myObject = (dynamic)new JObject();
-            myObject.OrderBy = "";
-            myObject.Limit = 20;
-            myObject.Skip = 0;
-            var postBody = new StringContent(myObject.ToString(), System.Text.Encoding.UTF8, "application/json");
+            var requestBody = new JObject
+            {
+                ["OrderBy"] = orderBy ?? "",
+                ["Limit"] = limit,
+                ["Skip"] = skip
+            };
 
-            var excedeResponse = await client.PostAsync("search/customer", postBody);
-            var excedeCustomerListJson = await excedeResponse.Content.ReadAsStringAsync();
-            var excedeCustomerList = Newtonsoft.Json.JsonConvert.DeserializeObject<ResultSet<ExcedeCustomer>>(excedeCustomerListJson).Items;
-            
-            return excedeCustomerList;
+            var postBody = new StringContent(requestBody.ToString(), Encoding.UTF8, "application/json");
+
+            var response = await client.PostAsync("search/customer", postBody);
+            response.EnsureSuccessStatusCode();
+
+            var responseJson = await response.Content.ReadAsStringAsync();
+            var resultSet = JsonConvert.DeserializeObject<ResultSet<ExcedeCustomer>>(responseJson);
+
+            int page = (limit == 0) ? 0 : skip / limit;
+            int totalPages = (limit == 0) ? 0 : (int)Math.Ceiling((double)resultSet.TotalItems / limit);
+
+            return new PaginatedResult<ExcedeCustomer>
+            {
+                Items = resultSet.Items,
+                Limit = limit,
+                Page = page,
+                TotalCount = resultSet.TotalItems,
+                TotalPages = totalPages
+            };
         }
-        
+
         public async Task<string> GetExcedeAccessToken()
         {
             _logger.LogDebug("Start GetExcedeToken");
-            
+
             var client = _httpClientFactory.CreateClient("excedeapi");
 
             // get an auth token
@@ -92,7 +103,7 @@ namespace CRM.Infrastructure.Gateways.Integrations
             var accessToken = d.token.ToString();
 
             _logger.LogDebug("End GetExcedeToken");
-            
+
             return accessToken;
         }
     }

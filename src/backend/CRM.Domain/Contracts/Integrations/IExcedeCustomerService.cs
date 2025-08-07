@@ -1,13 +1,14 @@
-﻿using System.Collections.Generic;
+﻿using CRM.Domain.Models.Integrations;
+using CRM.Shared;
+using System.Collections.Generic;
 using System.Threading.Tasks;
-using CRM.Domain.Models.Integrations;
 
 namespace CRM.Domain.Contracts.Integrations
 {
     public interface IExcedeCustomerService
     {
         Task<ExcedeCustomer> GetExcedeCustomer(string integrationId);
-        Task<List<ExcedeCustomer>> GetExcedeCustomers();
+        Task<PaginatedResult<ExcedeCustomer>> GetExcedeCustomers(int limit = 50, int skip = 0, string orderBy = "");
         Task<string> GetExcedeAccessToken();
         
     }

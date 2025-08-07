@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
-import { createApiService, Contact, ReportData, EmployeeCallLog } from '../services/apiService';
+import { createApiService, Customer, ReportData, EmployeeCallLog } from '../services/apiService';
 import { hasAdminRole } from '../utils/roleUtils';
 
 const Admin: React.FC = () => {
   const { isAuthenticated, isLoading, getAccessTokenSilently, user } = useAuth0();
   const [tokenMessage, setTokenMessage] = useState("Click to get a token.");
-  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [reportData, setReportData] = useState<ReportData[]>([]);
   const [employeeCallLogs, setEmployeeCallLogs] = useState<EmployeeCallLog[]>([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
@@ -43,17 +43,17 @@ const Admin: React.FC = () => {
     }
   };
 
-  const fetchContacts = async () => {
+  const fetchCustomers = async () => {
     try {
       setLoadingContacts(true);
       setApiError(null);
-      const data = await apiService.getContacts();
-      setContacts(data);
-      setTokenMessage(`Successfully fetched ${data.length} contacts!`);
+      const response = await apiService.getContacts();
+      setCustomers(response.items);
+      setTokenMessage(`Successfully fetched ${response.items.length} customers!`);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setApiError(`Contacts Error: ${errorMessage}`);
-      console.error('Error fetching contacts:', error);
+      setApiError(`Customers Error: ${errorMessage}`);
+      console.error('Error fetching customers:', error);
     } finally {
       setLoadingContacts(false);
     }
@@ -183,13 +183,13 @@ const Admin: React.FC = () => {
           <div className="mb-8">
             <h2 className="text-2xl font-semibold text-gray-700 mb-4">API Endpoint Testing</h2>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mb-4">
-              <button
-                onClick={fetchContacts}
-                disabled={loadingContacts}
-                className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-xl shadow-lg hover:bg-purple-700 transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loadingContacts ? 'Loading...' : 'Fetch Contacts'}
-              </button>
+                             <button
+                 onClick={fetchCustomers}
+                 disabled={loadingContacts}
+                 className="px-6 py-3 bg-purple-600 text-white font-semibold rounded-xl shadow-lg hover:bg-purple-700 transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                 {loadingContacts ? 'Loading...' : 'Fetch Customers'}
+               </button>
               <button
                 onClick={fetchReportData}
                 disabled={loadingReportData}
@@ -226,16 +226,16 @@ const Admin: React.FC = () => {
           )}
 
           {/* Results Display */}
-          {(contacts.length > 0 || reportData.length > 0 || employeeCallLogs.length > 0) && (
+          {(customers.length > 0 || reportData.length > 0 || employeeCallLogs.length > 0) && (
             <div className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-4">Results</h2>
               
-              {contacts.length > 0 && (
+              {customers.length > 0 && (
                 <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">Contacts ({contacts.length})</h3>
+                  <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">Customers ({customers.length})</h3>
                   <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 p-4 rounded-xl text-left max-h-60 overflow-y-auto">
                     <pre className="text-gray-800 dark:text-gray-200 overflow-x-auto whitespace-pre-wrap">
-                      {JSON.stringify(contacts, null, 2)}
+                      {JSON.stringify(customers, null, 2)}
                     </pre>
                   </div>
                 </div>
