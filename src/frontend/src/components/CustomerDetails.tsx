@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { createApiService, Customer, Note } from '../services/apiService';
@@ -14,6 +14,15 @@ const CustomerDetails: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState<string | null>(null);
+  const [showAddNoteForm, setShowAddNoteForm] = useState(false);
+  const [addNoteLoading, setAddNoteLoading] = useState(false);
+  const [addNoteError, setAddNoteError] = useState<string | null>(null);
+  const [newNote, setNewNote] = useState({
+    subject: '',
+    des: ''
+  });
+  const dialogContentRef = useRef<HTMLDivElement>(null);
+  const dialogContainerRef = useRef<HTMLDivElement>(null);
 
   // Create API service with the getAccessTokenSilently function
   const apiService = createApiService(() =>
@@ -80,6 +89,56 @@ const CustomerDetails: React.FC = () => {
     setShowNotesDialog(false);
     setNotes([]);
     setNotesError(null);
+    setShowAddNoteForm(false);
+    setNewNote({ subject: '', des: '' });
+    setAddNoteError(null);
+  };
+
+  const handleAddNote = async () => {
+    if (!customer?.notId || !newNote.subject.trim() || !newNote.des.trim()) {
+      setAddNoteError('Please fill in both subject and description');
+      return;
+    }
+
+    try {
+      setAddNoteLoading(true);
+      setAddNoteError(null);
+      
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/customer/note`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await getAccessTokenSilently({
+            authorizationParams: {
+              audience: process.env.REACT_APP_AUTH0_AUDIENCE
+            }
+          })}`
+        },
+        body: JSON.stringify({
+          notid: customer.notId.toString(),
+          subject: newNote.subject.trim(),
+          des: newNote.des.trim()
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Reset form and hide it
+      setNewNote({ subject: '', des: '' });
+      setShowAddNoteForm(false);
+      setAddNoteError(null);
+      
+             // Refresh notes list
+       await handleShowNotes();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setAddNoteError(`Failed to add note: ${errorMessage}`);
+      console.error('Error adding note:', error);
+    } finally {
+      setAddNoteLoading(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -278,20 +337,24 @@ const CustomerDetails: React.FC = () => {
                  Back to Customers
                </button>
                <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Customer Details</h1>
-               <p className="text-gray-600 dark:text-gray-300">View detailed information for {customer.name}</p>
+               <p className="text-gray-600 dark:text-gray-300">{customer.name}</p>
              </div>
-                           <div className="flex space-x-3">
-                <button className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200">
-                  Add Note
-                </button>
-                <button
-                  onClick={fetchCustomerDetails}
-                  disabled={loading}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? 'Refreshing...' : 'Refresh'}
-                </button>
-              </div>
+                                                       <div className="flex space-x-3">
+                 <button
+                   onClick={handleShowNotes}
+                   disabled={notesLoading}
+                   className="bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                 >
+                   {notesLoading ? 'Loading...' : 'Notes'}
+                 </button>
+                 <button
+                   onClick={fetchCustomerDetails}
+                   disabled={loading}
+                   className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                 >
+                   {loading ? 'Refreshing...' : 'Refresh'}
+                 </button>
+               </div>
            </div>
 
           {/* Customer Information Grid */}
@@ -519,36 +582,8 @@ const CustomerDetails: React.FC = () => {
             </div>
           </div>
 
-          {/* Additional Information */}
-          <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Notes Card */}
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Notes
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Note ID</label>
-                  <p className="text-gray-800 dark:text-white">{customer.notId}</p>
-                </div>
-                {customer.notId === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-gray-500 dark:text-gray-400 text-sm">No notes</p>
-                  </div>
-                                 ) : (
-                   <button 
-                     onClick={handleShowNotes}
-                     disabled={notesLoading}
-                     className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                   >
-                     {notesLoading ? 'Loading...' : 'Show Notes'}
-                   </button>
-                 )}
-              </div>
-            </div>
+                     {/* Additional Information */}
+           <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">System Information</h3>
@@ -613,8 +648,8 @@ const CustomerDetails: React.FC = () => {
 
                      {/* Notes Dialog */}
            {showNotesDialog && (
-             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+                           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div ref={dialogContainerRef} className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
                  {/* Dialog Header */}
                  <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
                    <div className="flex items-center">
@@ -633,71 +668,157 @@ const CustomerDetails: React.FC = () => {
                    </button>
                  </div>
 
-                 {/* Dialog Content */}
-                 <div className="p-6 overflow-y-auto flex-1 min-h-0">
-                  {notesLoading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                      <span className="ml-3 text-gray-600 dark:text-gray-300">Loading notes...</span>
-                    </div>
-                  ) : notesError ? (
-                    <div className="text-center py-8">
-                      <div className="mb-4">
-                        <svg className="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                        </svg>
-                      </div>
-                      <p className="text-red-600 dark:text-red-400">{notesError}</p>
-                    </div>
-                  ) : notes.length === 0 ? (
-                    <div className="text-center py-8">
-                      <div className="mb-4">
-                        <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                      </div>
-                      <p className="text-gray-500 dark:text-gray-400">No notes found</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                                             {notes
-                         .sort((a, b) => new Date(b.dateUpdate).getTime() - new Date(a.dateUpdate).getTime())
-                         .map((note, index) => (
-                         <div key={note.notId} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                           <div className="flex items-start justify-between mb-3">
-                             <div>
-                               <h3 className="font-semibold text-gray-800 dark:text-white mb-1">Note {index + 1}</h3>
-                                                               <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                                  <div><span className="font-medium">Employee:</span> {note.empName}</div>
-                                  <div><span className="font-medium">Updated:</span> {formatDateTime(note.dateUpdate)}</div>
-                                </div>
+                                                                                         {/* Dialog Content */}
+                    <div ref={dialogContentRef} className="p-6 overflow-y-auto flex-1 min-h-0">
+                     {showAddNoteForm && (
+                       <div className="space-y-4">
+                         <div className="flex items-center justify-between mb-4">
+                           <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Add New Note</h3>
+                           <button
+                             onClick={() => setShowAddNoteForm(false)}
+                             className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
+                           >
+                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                             </svg>
+                           </button>
+                         </div>
+                         
+                         {addNoteError && (
+                           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                             <p className="text-red-600 dark:text-red-400 text-sm">{addNoteError}</p>
+                           </div>
+                         )}
+                         
+                         <div className="space-y-4">
+                           <div>
+                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                               Subject *
+                             </label>
+                             <input
+                               type="text"
+                               value={newNote.subject}
+                               onChange={(e) => setNewNote({ ...newNote, subject: e.target.value })}
+                               maxLength={20}
+                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                               placeholder="Enter note subject"
+                             />
+                             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                               {newNote.subject.length}/20 characters
                              </div>
                            </div>
-                           <div className="space-y-2">
-                             <div>
-                               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Subject:</span>
-                               <p className="text-gray-800 dark:text-white mt-1">{note.subject}</p>
-                             </div>
-                             <div>
-                               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Description:</span>
-                               <p className="text-gray-700 dark:text-gray-300 mt-1">{note.des}</p>
+                           
+                           <div>
+                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                               Description *
+                             </label>
+                             <textarea
+                               value={newNote.des}
+                               onChange={(e) => setNewNote({ ...newNote, des: e.target.value })}
+                               maxLength={200}
+                               rows={4}
+                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white resize-none"
+                               placeholder="Enter note description"
+                             />
+                             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                               {newNote.des.length}/200 characters
                              </div>
                            </div>
                          </div>
-                       ))}
-                    </div>
-                  )}
-                </div>
+                         
+                         <div className="flex justify-end space-x-3 pt-4">
+                           <button
+                             onClick={() => setShowAddNoteForm(false)}
+                             className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors duration-200"
+                           >
+                             Cancel
+                           </button>
+                           <button
+                             onClick={handleAddNote}
+                             disabled={addNoteLoading || !newNote.subject.trim() || !newNote.des.trim()}
+                             className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                           >
+                             {addNoteLoading ? 'Adding...' : 'Add Note'}
+                           </button>
+                         </div>
+                       </div>
+                     )}
+                     
+                     {!showAddNoteForm && (
+                       <>
+                         {notesLoading ? (
+                           <div className="flex items-center justify-center py-8">
+                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                             <span className="ml-3 text-gray-600 dark:text-gray-300">Loading notes...</span>
+                           </div>
+                         ) : notesError ? (
+                           <div className="text-center py-8">
+                             <div className="mb-4">
+                               <svg className="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                               </svg>
+                             </div>
+                             <p className="text-red-600 dark:text-red-400">{notesError}</p>
+                           </div>
+                         ) : notes.length === 0 ? (
+                           <div className="text-center py-8">
+                             <div className="mb-4">
+                               <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                               </svg>
+                             </div>
+                             <p className="text-gray-500 dark:text-gray-400">No notes found</p>
+                           </div>
+                         ) : (
+                           <div className="space-y-4">
+                             {notes
+                               .sort((a, b) => new Date(b.dateUpdate).getTime() - new Date(a.dateUpdate).getTime())
+                               .map((note, index) => (
+                               <div key={note.notId} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                 <div className="flex items-start justify-between mb-3">
+                                   <div>
+                                     <h3 className="font-semibold text-gray-800 dark:text-white mb-1">Note {index + 1}</h3>
+                                     <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                       <div><span className="font-medium">Employee:</span> {note.empName}</div>
+                                       <div><span className="font-medium">Updated:</span> {formatDateTime(note.dateUpdate)}</div>
+                                     </div>
+                                   </div>
+                                 </div>
+                                 <div className="space-y-2">
+                                   <div>
+                                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Subject:</span>
+                                     <p className="text-gray-800 dark:text-white mt-1">{note.subject}</p>
+                                   </div>
+                                   <div>
+                                     <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Description:</span>
+                                     <p className="text-gray-700 dark:text-gray-300 mt-1">{note.des}</p>
+                                   </div>
+                                 </div>
+                               </div>
+                             ))}
+                           </div>
+                         )}
+                       </>
+                     )}
+                  </div>
 
-                                 {/* Dialog Footer */}
-                 <div className="flex justify-end p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-                   <button
-                     onClick={handleCloseNotesDialog}
-                     className="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors duration-200"
-                   >
-                     Close
-                   </button>
-                 </div>
+                                                   {/* Dialog Footer */}
+                  <div className="flex justify-between items-center p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                    {!showAddNoteForm && (
+                      <button
+                        onClick={() => setShowAddNoteForm(true)}
+                        className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200"
+                      >
+                        Add Note
+                      </button>
+                    )}
+                    <button
+                      onClick={handleCloseNotesDialog}
+                      className="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors duration-200"
+                    >
+                      Close
+                    </button>
+                  </div>
               </div>
             </div>
           )}
