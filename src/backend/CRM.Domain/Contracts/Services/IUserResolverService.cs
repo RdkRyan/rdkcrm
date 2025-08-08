@@ -2,6 +2,6 @@
 {
     public interface IUserResolverService
     {
-        string GetUserId();
+        string GetUserEmail();
     }
 }

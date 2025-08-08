@@ -19,20 +19,21 @@ namespace CRM.Api.Controllers.Integrations
             _customerService = excedeCustomerService;
         }
 
-        // todo: GetCustomers
         [Route("customers")]
         //[Authorize(Policy = "ReadContactsPolicy")]
         [HttpGet]
         public async Task<ActionResult<PaginatedResponse<ExcedeCustomer>>> Get(
             int? page = 0,
             int limit = 50,
+            string filter = "",
+            string search = "",
             string orderBy = "dateUpdate desc")
         {
             int safeLimit = Math.Min(limit, 50);
             int currentPage = page ?? 0;
             int skip = currentPage * safeLimit;
 
-            var paginatedResult = await _customerService.GetExcedeCustomers(safeLimit, skip, orderBy);
+            var paginatedResult = await _customerService.GetExcedeCustomers(safeLimit, skip, filter, search, orderBy);
 
             var response = new PaginatedResponse<ExcedeCustomer>
             {
@@ -48,8 +49,6 @@ namespace CRM.Api.Controllers.Integrations
 
             return Ok(response);
         }
-
-        // todo:GetCustomerById
 
         [Route("customer/{id}")]
         //[Authorize(Policy = "ReadContactsPolicy")]

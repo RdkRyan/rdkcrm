@@ -123,6 +123,15 @@ export interface EmployeeCallLog {
   customerName: string;
 }
 
+export interface Note {
+  notId: string;
+  empName: string;
+  dateUpdate: string;
+  subject: string;
+  des: string;
+  // Add other note properties as needed
+}
+
 class ApiService {
   private getAccessTokenSilently: () => Promise<string>;
 
@@ -144,7 +153,7 @@ class ApiService {
     }
   }
 
-  async getContacts(page: number = 0, limit: number = 50, skip?: number): Promise<CustomersResponse> {
+  async getContacts(page: number = 0, limit: number = 50, skip?: number, search?: string, includeInactive?: boolean): Promise<CustomersResponse> {
     try {
       const headers = await this.getAuthHeaders();
       const queryParams = new URLSearchParams({
@@ -152,6 +161,21 @@ class ApiService {
         limit: limit.toString(),
         ...(skip !== undefined && { skip: skip.toString() })
       });
+
+      // Build the "filter" clause for equals conditions
+      const filterConditions = [];
+      if (includeInactive === false) {
+        filterConditions.push('inactive eq 0');
+      }
+      
+      if (filterConditions.length > 0) {
+        queryParams.append('filter', filterConditions.join(' AND '));
+      }
+
+      // Add search term for LIKE conditions (separate parameter)
+      if (search && search.trim()) {
+        queryParams.append('search', search.trim());
+      }
       
       const response = await fetch(`${API_BASE_URL}/Customer/customers?${queryParams}`, {
         method: 'GET',
@@ -252,6 +276,34 @@ class ApiService {
       return data;
     } catch (error) {
       console.error('Error fetching employee call logs:', error);
+      throw error;
+    }
+  }
+
+  async getNotesByCustomerId(customerId: string): Promise<Note[]> {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${API_BASE_URL}/v1/customer/${customerId}/notes`, {
+        method: 'GET',
+        headers,
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('Unauthorized: Invalid or expired token');
+        } else if (response.status === 403) {
+          throw new Error('Forbidden: Insufficient permissions to access notes');
+        } else if (response.status === 404) {
+          throw new Error('Notes not found');
+        } else {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching notes:', error);
       throw error;
     }
   }

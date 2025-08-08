@@ -24,6 +24,11 @@ namespace CRM.Framework.Services.Integrations
             return await _excedeEmployeeGateway.GetExcedeEmployees(accessToken);
         }
 
+        public async Task<ExcedeEmployee> GetExcedeEmployeeByEmailAddress(string emailAddress)
+        {
+            return await _excedeEmployeeGateway.GetExcedeEmployeeByEmailAddress(await GetExcedeAccessToken(), emailAddress);
+        }
+
         public async Task<ExcedeEmployee> GetExcedeEmployeeById(string accessToken, string id)
         {
             return await _excedeEmployeeGateway.GetExcedeEmployeeById(accessToken, id);

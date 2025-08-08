@@ -8,7 +8,7 @@ namespace CRM.Domain.Contracts.Integrations
     public interface IExcedeCustomerService
     {
         Task<ExcedeCustomer> GetExcedeCustomer(string integrationId);
-        Task<PaginatedResult<ExcedeCustomer>> GetExcedeCustomers(int limit = 50, int skip = 0, string orderBy = "");
+        Task<PaginatedResult<ExcedeCustomer>> GetExcedeCustomers(int limit = 50, int skip = 0, string filter = "", string search = "", string orderBy = "");
         Task<string> GetExcedeAccessToken();
         
     }

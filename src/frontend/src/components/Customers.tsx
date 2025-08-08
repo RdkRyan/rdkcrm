@@ -14,6 +14,10 @@ const Customers: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
+  // Search and filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [includeInactive, setIncludeInactive] = useState(false);
+
   // Ref for scrolling to top of customers list
   const customersListRef = useRef<HTMLDivElement>(null);
   const customersGridRef = useRef<HTMLDivElement>(null);
@@ -27,14 +31,14 @@ const Customers: React.FC = () => {
     })
   );
 
-  const fetchCustomers = async (page: number = 1, itemsPerPage: number = 10) => {
+  const fetchCustomers = async (page: number = 1, itemsPerPage: number = 10, skip?: number, search: string = '', includeInactive: boolean = false) => {
     try {
       setLoading(true);
       setError(null);
       
       // Convert to 0-based page index for API
       const apiPage = page - 1;
-      const response: CustomersResponse = await apiService.getContacts(apiPage, itemsPerPage);
+      const response: CustomersResponse = await apiService.getContacts(apiPage, itemsPerPage, skip, search, includeInactive);
       
       setCustomers(response.items);
       setPaginationMetadata(response.metadata);
@@ -52,16 +56,28 @@ const Customers: React.FC = () => {
       // Only fetch if we're not restoring pagination state
       const savedPage = sessionStorage.getItem('customersCurrentPage');
       if (!savedPage) {
-        fetchCustomers(currentPage, itemsPerPage);
+        fetchCustomers(currentPage, itemsPerPage, undefined, searchTerm, includeInactive);
       }
     }
   }, [isAuthenticated, currentPage, itemsPerPage]);
 
-  // Handle pagination state restoration when component mounts
+    // Handle pagination and search state restoration when component mounts
   useEffect(() => {
     if (isAuthenticated) {
       const savedPage = sessionStorage.getItem('customersCurrentPage');
       const savedItemsPerPage = sessionStorage.getItem('customersItemsPerPage');
+      const savedSearchTerm = sessionStorage.getItem('customersSearchTerm');
+      const savedIncludeInactive = sessionStorage.getItem('customersIncludeInactive');
+      
+      // Restore search state
+      if (savedSearchTerm !== null) {
+        setSearchTerm(savedSearchTerm);
+        sessionStorage.removeItem('customersSearchTerm');
+      }
+      if (savedIncludeInactive !== null) {
+        setIncludeInactive(savedIncludeInactive === 'true');
+        sessionStorage.removeItem('customersIncludeInactive');
+      }
       
       if (savedPage && savedItemsPerPage) {
         const page = parseInt(savedPage);
@@ -74,8 +90,15 @@ const Customers: React.FC = () => {
         sessionStorage.removeItem('customersCurrentPage');
         sessionStorage.removeItem('customersItemsPerPage');
         
-        // Force a fresh data fetch with the restored pagination state
-        fetchCustomers(page, itemsPerPage);
+        // Force a fresh data fetch with the restored pagination and search state
+        const currentSearchTerm = savedSearchTerm !== null ? savedSearchTerm : searchTerm;
+        const currentIncludeInactive = savedIncludeInactive !== null ? savedIncludeInactive === 'true' : includeInactive;
+        fetchCustomers(page, itemsPerPage, undefined, currentSearchTerm, currentIncludeInactive);
+      } else if (savedSearchTerm !== null || savedIncludeInactive !== null) {
+        // If we have search state but no pagination state, fetch with current pagination
+        const currentSearchTerm = savedSearchTerm !== null ? savedSearchTerm : searchTerm;
+        const currentIncludeInactive = savedIncludeInactive !== null ? savedIncludeInactive === 'true' : includeInactive;
+        fetchCustomers(currentPage, itemsPerPage, undefined, currentSearchTerm, currentIncludeInactive);
       }
     }
   }, [isAuthenticated]);
@@ -147,6 +170,28 @@ const Customers: React.FC = () => {
     setCurrentPage(1); // Reset to first page when changing items per page
     // Set flag to indicate this is a pagination change
     sessionStorage.setItem('isPaginationChange', 'true');
+    fetchCustomers(1, newItemsPerPage, undefined, searchTerm, includeInactive);
+  };
+
+  // Handle search input change (no API call)
+  const handleSearchInputChange = (searchValue: string) => {
+    setSearchTerm(searchValue);
+  };
+
+  // Handle search button click
+  const handleSearchButtonClick = () => {
+    setCurrentPage(1); // Reset to first page when searching
+    // Don't set pagination change flag for search - we don't want to scroll
+    fetchCustomers(1, itemsPerPage, undefined, searchTerm, includeInactive);
+    
+    // Save search state to sessionStorage
+    sessionStorage.setItem('customersSearchTerm', searchTerm);
+    sessionStorage.setItem('customersIncludeInactive', includeInactive.toString());
+  };
+
+  // Handle include inactive toggle (no API call)
+  const handleIncludeInactiveToggle = (include: boolean) => {
+    setIncludeInactive(include);
   };
 
   // Format phone number for display
@@ -224,18 +269,64 @@ const Customers: React.FC = () => {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Customers</h1>
-              <p className="text-gray-600 dark:text-gray-300">Manage your customers</p>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Customers</h1>
+            <p className="text-gray-600 dark:text-gray-300">Manage your customers</p>
+          </div>
+
+          {/* Search and Filter Controls */}
+          <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              {/* Search Bar */}
+              <div className="flex-1 min-w-0">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search by Customer Name"
+                    value={searchTerm}
+                    onChange={(e) => handleSearchInputChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSearchButtonClick();
+                      }
+                    }}
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md leading-5 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {/* Include Inactive Toggle */}
+              <div className="flex items-center space-x-3">
+                <label className="text-sm text-gray-600 dark:text-gray-300">Include Inactive:</label>
+                <button
+                  onClick={() => handleIncludeInactiveToggle(!includeInactive)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    includeInactive ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-500'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
+                      includeInactive ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Search Button */}
+              <button
+                onClick={handleSearchButtonClick}
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+              >
+                {loading ? 'Searching...' : 'Search'}
+              </button>
             </div>
-                         <button
-               onClick={() => fetchCustomers(currentPage, itemsPerPage)}
-               disabled={loading}
-               className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-             >
-               {loading ? 'Refreshing...' : 'Refresh'}
-             </button>
           </div>
 
           {/* Error Display */}
@@ -323,14 +414,62 @@ const Customers: React.FC = () => {
                               {customer.emailWork || customer.emailOther}
                             </div>
                           )}
-                          {(customer.phoneWork || customer.phoneOther) && (
-                            <div className="flex items-center">
-                              <svg className="w-4 h-4 mr-2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                              </svg>
-                              {formatPhoneNumber(customer.phoneWork || customer.phoneOther)}
-                            </div>
-                          )}
+                                                     {(customer.phoneWork || customer.phoneOther || customer.phoneHome || customer.phoneFax) && (
+                             <div className="space-y-1">
+                               {customer.phoneWork && (
+                                 <div className="flex items-center">
+                                   <svg className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                   </svg>
+                                   <span className="text-sm text-gray-600 dark:text-gray-400">Work:</span>
+                                   <span className="ml-1">{formatPhoneNumber(customer.phoneWork)}</span>
+                                   {customer.doNotCallPhoneWork === 1 ? (
+                                     <span className="ml-2 text-xs text-red-600 dark:text-red-400">(Do Not Call)</span>
+                                   ) : (
+                                     <span className="ml-2 text-xs text-green-600 dark:text-green-400" title="OK to Call">✅</span>
+                                   )}
+                                 </div>
+                               )}
+                               {customer.phoneOther && (
+                                 <div className="flex items-center">
+                                   <svg className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                   </svg>
+                                   <span className="text-sm text-gray-600 dark:text-gray-400">Other:</span>
+                                   <span className="ml-1">{formatPhoneNumber(customer.phoneOther)}</span>
+                                   {customer.doNotCallPhoneOther === 1 ? (
+                                     <span className="ml-2 text-xs text-red-600 dark:text-red-400">(Do Not Call)</span>
+                                   ) : (
+                                     <span className="ml-2 text-xs text-green-600 dark:text-green-400" title="OK to Call">✅</span>
+                                   )}
+                                 </div>
+                               )}
+                               {customer.phoneHome && (
+                                 <div className="flex items-center">
+                                   <svg className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                   </svg>
+                                   <span className="text-sm text-gray-600 dark:text-gray-400">Home:</span>
+                                   <span className="ml-1">{formatPhoneNumber(customer.phoneHome)}</span>
+                                   {customer.doNotCallPhoneHome === 1 ? (
+                                     <span className="ml-2 text-xs text-red-600 dark:text-red-400">(Do Not Call)</span>
+                                   ) : (
+                                     <span className="ml-2 text-xs text-green-600 dark:text-green-400" title="OK to Call">✅</span>
+                                   )}
+                                 </div>
+                               )}
+                               {customer.phoneFax && (
+                                 <div className="flex items-center">
+                                   <svg className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                   </svg>
+                                   <span className="text-sm text-gray-600 dark:text-gray-400">Fax:</span>
+                                   <span className="ml-1">{formatPhoneNumber(customer.phoneFax)}</span>
+                                   <span className="ml-2 text-xs text-green-600 dark:text-green-400" title="OK to Call">✅</span>
+                                 </div>
+                               )}
+                             </div>
+                           )}
                           {customer.addr1 && (
                             <div className="flex items-center">
                               <svg className="w-4 h-4 mr-2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

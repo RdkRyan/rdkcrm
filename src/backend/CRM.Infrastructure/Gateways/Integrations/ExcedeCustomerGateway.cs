@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
+using System.Runtime.Caching;
 using System.Text;
 
 namespace CRM.Infrastructure.Gateways.Integrations
@@ -53,7 +54,7 @@ namespace CRM.Infrastructure.Gateways.Integrations
             }
         }
 
-        public async Task<PaginatedResult<ExcedeCustomer>> GetExcedeCustomers(string accessToken, int limit, int skip, string orderBy)
+        public async Task<PaginatedResult<ExcedeCustomer>> GetExcedeCustomers(string accessToken, int limit = 50, int skip = 0, string filter = "", string orderBy = "")
         {
             if (limit > 50)
                 limit = 50;
@@ -63,6 +64,7 @@ namespace CRM.Infrastructure.Gateways.Integrations
 
             var requestBody = new JObject
             {
+                ["Where"] = filter ?? "",
                 ["OrderBy"] = orderBy ?? "",
                 ["Limit"] = limit,
                 ["Skip"] = skip
@@ -88,6 +90,124 @@ namespace CRM.Infrastructure.Gateways.Integrations
                 TotalPages = totalPages
             };
         }
+
+        public async Task<PaginatedResult<ExcedeCustomer>> GetExcedeCustomers(
+            string accessToken,
+            int limit = 50,
+            int skip = 0,
+            string filter = "",
+            string search = "",
+            string orderBy = "")
+        {
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                // 🧠 Use in-memory filtering with cache
+                var cacheKey = "ExcedeCustomers_All";
+
+                ObjectCache memoryCache = MemoryCache.Default;
+                List<ExcedeCustomer> allCustomers;
+
+                if (memoryCache.Contains(cacheKey))
+                {
+                    allCustomers = (List<ExcedeCustomer>)memoryCache.Get(cacheKey);
+                }
+                else
+                {
+                    // Pull all (up to 99,999)
+                    var client = _httpClientFactory.CreateClient("excedeapi");
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                    var requestBody = new JObject
+                    {
+                        ["Where"] = filter ?? "",
+                        ["OrderBy"] = orderBy ?? "",
+                        ["Limit"] = 99999,
+                        ["Skip"] = 0
+                    };
+
+                    var postBody = new StringContent(requestBody.ToString(), Encoding.UTF8, "application/json");
+
+                    var response = await client.PostAsync("search/customer", postBody);
+                    response.EnsureSuccessStatusCode();
+
+                    var responseJson = await response.Content.ReadAsStringAsync();
+                    var resultSet = JsonConvert.DeserializeObject<ResultSet<ExcedeCustomer>>(responseJson);
+
+                    allCustomers = resultSet.Items;
+
+                    // Store in memory for 60 seconds
+                    memoryCache.Set(
+                        cacheKey,
+                        allCustomers,
+                        new CacheItemPolicy
+                        {
+                            AbsoluteExpiration = DateTimeOffset.Now.AddSeconds(60)
+                        });
+                }
+
+                // 🧼 Perform case-insensitive "like" filter on Name
+                var filtered = allCustomers
+                    .Where(c => !string.IsNullOrWhiteSpace(c.Name) && c.Name.Contains(search, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                // ⏳ Manual ordering (optional: extend to support multiple fields)
+                if (!string.IsNullOrWhiteSpace(orderBy))
+                {
+                    filtered = filtered
+                        .OrderByDynamic(orderBy) // you'll implement or plug this in below
+                        .ToList();
+                }
+
+                // 🧮 Manual pagination
+                var pagedItems = filtered.Skip(skip).Take(limit).ToList();
+                int totalPages = (limit == 0) ? 0 : (int)Math.Ceiling((double)filtered.Count / limit);
+                int page = (limit == 0) ? 0 : skip / limit;
+
+                return new PaginatedResult<ExcedeCustomer>
+                {
+                    Items = pagedItems,
+                    Limit = limit,
+                    Page = page,
+                    TotalCount = filtered.Count,
+                    TotalPages = totalPages
+                };
+            }
+            else
+            {
+                // 📡 Default server-side API call
+                var client = _httpClientFactory.CreateClient("excedeapi");
+                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                var requestBody = new JObject
+                {
+                    ["Where"] = filter ?? "",
+                    ["OrderBy"] = orderBy ?? "",
+                    ["Limit"] = limit,
+                    ["Skip"] = skip
+                };
+
+                var postBody = new StringContent(requestBody.ToString(), Encoding.UTF8, "application/json");
+
+                var response = await client.PostAsync("search/customer", postBody);
+                response.EnsureSuccessStatusCode();
+
+                var responseJson = await response.Content.ReadAsStringAsync();
+                var resultSet = JsonConvert.DeserializeObject<ResultSet<ExcedeCustomer>>(responseJson);
+
+                int page = (limit == 0) ? 0 : skip / limit;
+                int totalPages = (limit == 0) ? 0 : (int)Math.Ceiling((double)resultSet.TotalItems / limit);
+
+                return new PaginatedResult<ExcedeCustomer>
+                {
+                    Items = resultSet.Items,
+                    Limit = limit,
+                    Page = page,
+                    TotalCount = resultSet.TotalItems,
+                    TotalPages = totalPages
+                };
+            }
+        }
+
 
         public async Task<string> GetExcedeAccessToken()
         {

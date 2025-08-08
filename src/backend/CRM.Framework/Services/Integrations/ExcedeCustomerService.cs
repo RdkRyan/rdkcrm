@@ -16,10 +16,18 @@ namespace CRM.Framework.Services.Integrations
             _excedeCustomerGateway = excedeCustomerGateway;
         }
 
-        public async Task<PaginatedResult<ExcedeCustomer>> GetExcedeCustomers(int limit = 50, int skip = 0, string orderBy = "")
+        public async Task<PaginatedResult<ExcedeCustomer>> GetExcedeCustomers(int limit = 50, int skip = 0, string filter = "", string search = "", string orderBy = "")
         {
             var accessToken = await _excedeCustomerGateway.GetExcedeAccessToken();
-            return await _excedeCustomerGateway.GetExcedeCustomers(accessToken, limit, skip, orderBy);
+
+            if (search.Trim().Length > 0)
+            {
+                // we will need to get all the records and do a "like" search in memory
+                return await _excedeCustomerGateway.GetExcedeCustomers(accessToken, limit, skip, filter, search, orderBy);
+
+            }
+
+            return await _excedeCustomerGateway.GetExcedeCustomers(accessToken, limit, skip, filter, orderBy);
         }
 
         public async Task<ExcedeCustomer> GetExcedeCustomer(string integrationId)

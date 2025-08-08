@@ -1,7 +1,10 @@
 using CRM.Domain.Contracts.Configuration;
+using CRM.Domain.Models.Integrations;
 using CRM.Framework;
 using CRM.Infrastructure;
 using CRM.Shared;
+using CRM.WebApi.Validators;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.OpenApi.Models;
 using Polly;
@@ -52,7 +55,7 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddSingleton<IAppSettings, AppSettings>();
 builder.Services.AddTransient(typeof(IPaginatedResult<>), typeof(PaginatedResult<>));
-//builder.Services.AddTransient(typeof(IPaginatedList<>), typeof(PaginatedList<>));
+builder.Services.AddScoped<IValidator<ExcedeNote>, ExcedeNoteValidator>();
 builder.Services.AddFrameworkServices();
 builder.Services.AddInfrastructureServices();
 builder.Services.AddControllers();
@@ -128,20 +131,20 @@ app.UseCors();
 
 app.UseAuthentication();
 
-//// Middleware to log all authenticated user claims ---
-//app.Use(async (context, next) =>
-//{
-//    // This middleware runs after UseAuthentication, so the user should be set if the token is valid.
-//    if (context.User.Identity?.IsAuthenticated == true)
-//    {
-//        app.Logger.LogInformation("User is authenticated. Claims:");
-//        foreach (var claim in context.User.Claims)
-//        {
-//            app.Logger.LogInformation("  - {ClaimType}: {ClaimValue}", claim.Type, claim.Value);
-//        }
-//    }
-//    await next.Invoke();
-//});
+// Middleware to log all authenticated user claims ---
+app.Use(async (context, next) =>
+{
+    // This middleware runs after UseAuthentication, so the user should be set if the token is valid.
+    if (context.User.Identity?.IsAuthenticated == true)
+    {
+        app.Logger.LogInformation("User is authenticated. Claims:");
+        foreach (var claim in context.User.Claims)
+        {
+            app.Logger.LogInformation("  - {ClaimType}: {ClaimValue}", claim.Type, claim.Value);
+        }
+    }
+    await next.Invoke();
+});
 
 app.UseAuthorization();
 

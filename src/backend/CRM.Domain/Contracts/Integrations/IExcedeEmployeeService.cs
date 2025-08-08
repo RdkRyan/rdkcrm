@@ -8,6 +8,7 @@ namespace CRM.Domain.Contracts.Integrations
     {
         Task<string> GetExcedeAccessToken();
         Task<List<ExcedeEmployee>> GetExcedeEmployees(string accessToken);
+        Task<ExcedeEmployee> GetExcedeEmployeeByEmailAddress(string emailAddress);
         Task<ExcedeEmployee> GetExcedeEmployeeById(string accessToken, string id);
     }
 }

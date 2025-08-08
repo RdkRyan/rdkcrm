@@ -9,6 +9,8 @@ namespace CRM.Infrastructure
         public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
         {
             services.AddScoped<IExcedeCustomerGateway, ExcedeCustomerGateway>();
+            services.AddScoped<IExcedeNoteGateway, ExcedeNoteGateway>();
+            services.AddScoped<IExcedeEmployeeGateway, ExcedeEmployeeGateway>();
 
             return services;
         }

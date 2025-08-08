@@ -1,13 +1,7 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Threading.Tasks;
 using CRM.Domain.Contracts.Configuration;
 using CRM.Domain.Contracts.Integrations;
-using CRM.Domain.Models;
 using CRM.Domain.Models.Integrations;
 using CRM.Shared;
 using Microsoft.Extensions.Logging;
@@ -45,8 +39,29 @@ namespace CRM.Infrastructure.Gateways.Integrations
             var excedeList = Newtonsoft.Json.JsonConvert.DeserializeObject<ResultSet<ExcedeNote>>(jsonList).Items;
             
             return excedeList;
-        }   
-        
+        }
+
+        public async Task<ExcedeNote> CreateExcedeNote(string accessToken, ExcedeNote excedeNote)
+        {
+            var excedeJson = Newtonsoft.Json.JsonConvert.SerializeObject(excedeNote);
+
+            // now use the token to get data
+            var client = _httpClientFactory.CreateClient("excedeapi");
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            // post and inspect status code returned
+            var postBody = new StringContent(excedeJson, System.Text.Encoding.UTF8, "application/json");
+            var response = await client.PostAsync("note", postBody);
+            var stringResponse = await response.Content.ReadAsStringAsync();
+
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                throw new Exception("Excede Note Post Failed:" + stringResponse);
+            }
+
+            return Newtonsoft.Json.JsonConvert.DeserializeObject<ExcedeNote>(stringResponse);
+        }
+
         public async Task<string> GetExcedeAccessToken()
         {
             _logger.LogDebug("Start GetExcedeToken");

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { createApiService, Customer } from '../services/apiService';
+import { createApiService, Customer, Note } from '../services/apiService';
 
 const CustomerDetails: React.FC = () => {
   const { isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
@@ -10,6 +10,10 @@ const CustomerDetails: React.FC = () => {
   const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showNotesDialog, setShowNotesDialog] = useState(false);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [notesLoading, setNotesLoading] = useState(false);
+  const [notesError, setNotesError] = useState<string | null>(null);
 
   // Create API service with the getAccessTokenSilently function
   const apiService = createApiService(() =>
@@ -54,10 +58,43 @@ const CustomerDetails: React.FC = () => {
     navigate('/customers');
   };
 
+  const handleShowNotes = async () => {
+    if (!customer?.id) return;
+    
+    try {
+      setNotesLoading(true);
+      setNotesError(null);
+      const notesData = await apiService.getNotesByCustomerId(customer.id);
+      setNotes(notesData);
+      setShowNotesDialog(true);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setNotesError(`Failed to fetch notes: ${errorMessage}`);
+      console.error('Error fetching notes:', error);
+    } finally {
+      setNotesLoading(false);
+    }
+  };
+
+  const handleCloseNotesDialog = () => {
+    setShowNotesDialog(false);
+    setNotes([]);
+    setNotesError(null);
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     try {
       return new Date(dateString).toLocaleDateString();
+    } catch {
+      return dateString;
+    }
+  };
+
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleString();
     } catch {
       return dateString;
     }
@@ -97,7 +134,7 @@ const CustomerDetails: React.FC = () => {
     if (!phone) return null;
     return (
       <div className="flex items-center">
-        <svg className="w-4 h-4 mr-2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
         </svg>
         <a
@@ -106,8 +143,10 @@ const CustomerDetails: React.FC = () => {
         >
           {formatPhoneNumber(phone)}
         </a>
-        {doNotCall === 1 && (
+        {doNotCall === 1 ? (
           <span className="ml-2 text-xs text-red-600 dark:text-red-400">(Do Not Call)</span>
+        ) : (
+          <span className="ml-2 text-xs text-green-600 dark:text-green-400" title="OK to Call">✅</span>
         )}
       </div>
     );
@@ -226,31 +265,34 @@ const CustomerDetails: React.FC = () => {
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <button
-                onClick={handleBackToCustomers}
-                className="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mb-4 transition-colors duration-200"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Customers
-              </button>
-              <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Customer Details</h1>
-              <p className="text-gray-600 dark:text-gray-300">View detailed information for {customer.name}</p>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={fetchCustomerDetails}
-                disabled={loading}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Refreshing...' : 'Refresh'}
-              </button>
-            </div>
-          </div>
+                     {/* Header */}
+           <div className="flex items-center justify-between mb-8">
+             <div>
+               <button
+                 onClick={handleBackToCustomers}
+                 className="flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 mb-4 transition-colors duration-200"
+               >
+                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                 </svg>
+                 Back to Customers
+               </button>
+               <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Customer Details</h1>
+               <p className="text-gray-600 dark:text-gray-300">View detailed information for {customer.name}</p>
+             </div>
+                           <div className="flex space-x-3">
+                <button className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200">
+                  Add Note
+                </button>
+                <button
+                  onClick={fetchCustomerDetails}
+                  disabled={loading}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'Refreshing...' : 'Refresh'}
+                </button>
+              </div>
+           </div>
 
           {/* Customer Information Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -306,39 +348,56 @@ const CustomerDetails: React.FC = () => {
               </div>
             </div>
 
-            {/* Contact Information */}
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-              <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                </svg>
-                Contact Information
-              </h2>
-              <div className="space-y-4">
-                {getPhoneDisplay(customer.phoneHome, customer.doNotCallPhoneHome) && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Home Phone</label>
-                    {getPhoneDisplay(customer.phoneHome, customer.doNotCallPhoneHome)}
-                  </div>
-                )}
-                {getPhoneDisplay(customer.phoneWork, customer.doNotCallPhoneWork) && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Work Phone</label>
-                    {getPhoneDisplay(customer.phoneWork, customer.doNotCallPhoneWork)}
-                  </div>
-                )}
-                {getPhoneDisplay(customer.phoneOther, customer.doNotCallPhoneOther) && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Other Phone</label>
-                    {getPhoneDisplay(customer.phoneOther, customer.doNotCallPhoneOther)}
-                  </div>
-                )}
-                {customer.phoneFax && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Fax</label>
-                    <p className="text-gray-800 dark:text-white">{customer.phoneFax}</p>
-                  </div>
-                )}
+                         {/* Contact Information */}
+             <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
+               <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                 <svg className="w-5 h-5 mr-2 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                 </svg>
+                 Contact Information
+               </h2>
+                              <div className="space-y-4">
+                 {customer.contact && (
+                   <div>
+                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Contact Person</label>
+                     <p className="text-gray-800 dark:text-white">{customer.contact}</p>
+                   </div>
+                 )}
+                 {getPhoneDisplay(customer.phoneHome, customer.doNotCallPhoneHome) && (
+                   <div>
+                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Home Phone</label>
+                     {getPhoneDisplay(customer.phoneHome, customer.doNotCallPhoneHome)}
+                   </div>
+                 )}
+                 {getPhoneDisplay(customer.phoneWork, customer.doNotCallPhoneWork) && (
+                   <div>
+                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Work Phone</label>
+                     {getPhoneDisplay(customer.phoneWork, customer.doNotCallPhoneWork)}
+                   </div>
+                 )}
+                 {getPhoneDisplay(customer.phoneOther, customer.doNotCallPhoneOther) && (
+                   <div>
+                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Other Phone</label>
+                     {getPhoneDisplay(customer.phoneOther, customer.doNotCallPhoneOther)}
+                   </div>
+                 )}
+                                   {customer.phoneFax && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Fax</label>
+                      <div className="flex items-center">
+                        <svg className="w-4 h-4 mr-2 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                        <a
+                          href={`tel:${customer.phoneFax}`}
+                          className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 transition-colors duration-200"
+                        >
+                          {formatPhoneNumber(customer.phoneFax)}
+                        </a>
+                                                 <span className="ml-2 text-xs text-green-600 dark:text-green-400" title="OK to Call">✅</span>
+                      </div>
+                    </div>
+                  )}
                 {getEmailDisplay(customer.emailHome) && (
                   <div>
                     <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Home Email</label>
@@ -462,17 +521,46 @@ const CustomerDetails: React.FC = () => {
 
           {/* Additional Information */}
           <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Notes Card */}
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                <svg className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Notes
+              </h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Note ID</label>
+                  <p className="text-gray-800 dark:text-white">{customer.notId}</p>
+                </div>
+                {customer.notId === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 dark:text-gray-400 text-sm">No notes</p>
+                  </div>
+                                 ) : (
+                   <button 
+                     onClick={handleShowNotes}
+                     disabled={notesLoading}
+                     className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-purple-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                   >
+                     {notesLoading ? 'Loading...' : 'Show Notes'}
+                   </button>
+                 )}
+              </div>
+            </div>
+
             <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">System Information</h3>
-              <div className="space-y-2">
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Created</label>
-                  <p className="text-gray-800 dark:text-white">{formatDate(customer.dateCreate)}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Last Updated</label>
-                  <p className="text-gray-800 dark:text-white">{formatDate(customer.dateUpdate)}</p>
-                </div>
+                             <div className="space-y-2">
+                 <div>
+                   <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Created</label>
+                   <p className="text-gray-800 dark:text-white">{formatDateTime(customer.dateCreate)}</p>
+                 </div>
+                 <div>
+                   <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Last Updated</label>
+                   <p className="text-gray-800 dark:text-white">{formatDateTime(customer.dateUpdate)}</p>
+                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Type</label>
                   <p className="text-gray-800 dark:text-white">{customer.typ || 'N/A'}</p>
@@ -484,29 +572,7 @@ const CustomerDetails: React.FC = () => {
               </div>
             </div>
 
-            <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Personal Information</h3>
-              <div className="space-y-2">
-                {customer.dateBirth && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Date of Birth</label>
-                    <p className="text-gray-800 dark:text-white">{formatDate(customer.dateBirth)}</p>
-                  </div>
-                )}
-                {customer.dateBirthSpouse && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Spouse Date of Birth</label>
-                    <p className="text-gray-800 dark:text-white">{formatDate(customer.dateBirthSpouse)}</p>
-                  </div>
-                )}
-                {customer.contact && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400">Contact Person</label>
-                    <p className="text-gray-800 dark:text-white">{customer.contact}</p>
-                  </div>
-                )}
-              </div>
-            </div>
+            
 
             <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-6">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-4">Settings</h3>
@@ -545,21 +611,96 @@ const CustomerDetails: React.FC = () => {
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="mt-8 flex flex-wrap gap-4">
-            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200">
-              Edit Customer
-            </button>
-            <button className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200">
-              Add Contact
-            </button>
-            <button className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors duration-200">
-              View Call Logs
-            </button>
-            <button className="bg-yellow-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-yellow-700 transition-colors duration-200">
-              Send Email
-            </button>
-          </div>
+                     {/* Notes Dialog */}
+           {showNotesDialog && (
+             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
+                 {/* Dialog Header */}
+                 <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+                   <div className="flex items-center">
+                     <svg className="w-6 h-6 mr-3 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                     </svg>
+                     <h2 className="text-xl font-semibold text-gray-800 dark:text-white">Customer Notes</h2>
+                   </div>
+                   <button
+                     onClick={handleCloseNotesDialog}
+                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200"
+                   >
+                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                     </svg>
+                   </button>
+                 </div>
+
+                 {/* Dialog Content */}
+                 <div className="p-6 overflow-y-auto flex-1 min-h-0">
+                  {notesLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                      <span className="ml-3 text-gray-600 dark:text-gray-300">Loading notes...</span>
+                    </div>
+                  ) : notesError ? (
+                    <div className="text-center py-8">
+                      <div className="mb-4">
+                        <svg className="mx-auto h-12 w-12 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                      </div>
+                      <p className="text-red-600 dark:text-red-400">{notesError}</p>
+                    </div>
+                  ) : notes.length === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="mb-4">
+                        <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-500 dark:text-gray-400">No notes found</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                                             {notes
+                         .sort((a, b) => new Date(b.dateUpdate).getTime() - new Date(a.dateUpdate).getTime())
+                         .map((note, index) => (
+                         <div key={note.notId} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                           <div className="flex items-start justify-between mb-3">
+                             <div>
+                               <h3 className="font-semibold text-gray-800 dark:text-white mb-1">Note {index + 1}</h3>
+                                                               <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                                  <div><span className="font-medium">Employee:</span> {note.empName}</div>
+                                  <div><span className="font-medium">Updated:</span> {formatDateTime(note.dateUpdate)}</div>
+                                </div>
+                             </div>
+                           </div>
+                           <div className="space-y-2">
+                             <div>
+                               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Subject:</span>
+                               <p className="text-gray-800 dark:text-white mt-1">{note.subject}</p>
+                             </div>
+                             <div>
+                               <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Description:</span>
+                               <p className="text-gray-700 dark:text-gray-300 mt-1">{note.des}</p>
+                             </div>
+                           </div>
+                         </div>
+                       ))}
+                    </div>
+                  )}
+                </div>
+
+                                 {/* Dialog Footer */}
+                 <div className="flex justify-end p-6 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                   <button
+                     onClick={handleCloseNotesDialog}
+                     className="bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg font-semibold hover:bg-gray-400 dark:hover:bg-gray-500 transition-colors duration-200"
+                   >
+                     Close
+                   </button>
+                 </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
